@@ -1,32 +1,40 @@
+const _ = require('lodash')
+
 /* global WIKI */
 
 // ------------------------------------
 // Azure AD Account
 // ------------------------------------
 
-const AzureAdOAuth2Strategy = require('passport-azure-ad-oauth2').Strategy
+const OIDCStrategy = require('passport-azure-ad').OIDCStrategy
 
 module.exports = {
   init (passport, conf) {
-    const jwt = require('jsonwebtoken')
-    passport.use('azure_ad_oauth2',
-      new AzureAdOAuth2Strategy({
+    passport.use('azure',
+      new OIDCStrategy({
+        identityMetadata: conf.entryPoint,
         clientID: conf.clientId,
-        clientSecret: conf.clientSecret,
-        callbackURL: conf.callbackURL,
-        resource: conf.resource,
-        tenant: conf.tenant
-      }, (accessToken, refreshToken, params, profile, cb) => {
-        console.info(params, profile)
-        let waadProfile = jwt.decode(params.id_token)
-        waadProfile.id = waadProfile.oid
-        waadProfile.provider = 'azure'
-        // WIKI.models.users.processProfile(waadProfile).then((user) => {
-        //   return cb(null, user) || true
-        // }).catch((err) => {
-        //   return cb(err, null) || true
-        // })
-      }
-      ))
+        redirectUrl: conf.callbackURL,
+        responseType: 'id_token',
+        responseMode: 'form_post',
+        scope: ['profile', 'email', 'openid'],
+        allowHttpForRedirectUrl: WIKI.IS_DEBUG
+      }, async (iss, sub, profile, cb) => {
+        try {
+          const user = await WIKI.models.users.processProfile({
+            profile: {
+              id: profile.oid,
+              displayName: profile.displayName,
+              email: _.get(profile, '_json.email', ''),
+              picture: ''
+            },
+            providerKey: 'azure'
+          })
+          cb(null, user)
+        } catch (err) {
+          cb(err, null)
+        }
+      })
+    )
   }
 }

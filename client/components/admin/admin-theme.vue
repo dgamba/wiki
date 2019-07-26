@@ -35,6 +35,16 @@
                       v-list-tile-content
                         v-list-tile-title(v-html='data.item.text')
                         v-list-tile-sub-title(v-html='data.item.author')
+                  v-select.mt-3(
+                    :items='iconsets'
+                    outline
+                    background-color='grey lighten-2'
+                    prepend-icon='pets'
+                    v-model='config.iconset'
+                    :label='$t(`admin:theme.iconset`)'
+                    persistent-hint
+                    :hint='$t(`admin:theme.iconsetHint`)'
+                    )
                   v-divider.mt-3
                   v-switch(
                     v-model='darkMode'
@@ -43,6 +53,7 @@
                     persistent-hint
                     :hint='$t(`admin:theme.darkModeHint`)'
                     )
+
               v-card.wiki-form.mt-3.animated.fadeInUp.wait-p2s
                 v-toolbar(color='primary', dark, dense, flat)
                   v-toolbar-title
@@ -58,7 +69,10 @@
                     :hint='$t(`admin:theme.cssOverrideHint`)'
                     auto-grow
                     )
-                  v-textarea.mt-2(
+                  i18next.caption.pl-2.ml-1(path='admin:theme.cssOverrideWarning', tag='div')
+                    strong.red--text(place='caution') {{$t('admin:theme.cssOverrideWarningCaution')}}
+                    code(place='cssClass') .contents
+                  v-textarea.mt-3(
                     v-model='config.injectHead'
                     :label='$t(`admin:theme.headHtmlInjection`)'
                     outline
@@ -85,7 +99,26 @@
                     .subheading {{$t('admin:theme.downloadThemes')}}
                   v-spacer
                   v-chip(label, color='white', small).teal--text coming soon
-                v-card-text.caption -- Coming soon --
+                v-data-table(
+                  :headers='headers',
+                  :items='themes',
+                  hide-actions,
+                  item-key='value',
+                  :rows-per-page-items='[-1]'
+                )
+                  template(v-slot:items='thm')
+                    td
+                      strong {{thm.item.text}}
+                    td
+                      span {{ thm.item.author }}
+                    td.text-xs-center
+                      v-progress-circular(v-if='thm.item.isDownloading', indeterminate, color='blue', size='20', :width='2')
+                      v-btn(v-else-if='thm.item.isInstalled && thm.item.installDate < thm.item.updatedAt', icon)
+                        v-icon.blue--text cached
+                      v-btn(v-else-if='thm.item.isInstalled', icon)
+                        v-icon.green--text check
+                      v-btn(v-else, icon)
+                        v-icon.grey--text cloud_download
 </template>
 
 <script>
@@ -100,11 +133,18 @@ export default {
     return {
       loading: false,
       themes: [
-        { text: 'Default', author: 'requarks.io', value: 'default' }
+        { text: 'Default', author: 'requarks.io', value: 'default', isInstalled: true, installDate: '', updatedAt: '' }
+      ],
+      iconsets: [
+        { text: 'Material Icons (default)', value: 'md' },
+        { text: 'Material Design Icons', value: 'mdi' },
+        { text: 'Font Awesome 5', value: 'fa' },
+        { text: 'Font Awesome 4', value: 'fa4' },
       ],
       config: {
         theme: 'default',
         darkMode: false,
+        iconset: '',
         injectCSS: '',
         injectHead: '',
         injectBody: ''
@@ -113,7 +153,28 @@ export default {
     }
   },
   computed: {
-    darkMode: sync('site/dark')
+    darkMode: sync('site/dark'),
+    headers() {
+      return [
+        {
+          text: this.$t('admin:theme.downloadName'),
+          align: 'left',
+          value: 'text'
+        },
+        {
+          text: this.$t('admin:theme.downloadAuthor'),
+          align: 'left',
+          value: 'author'
+        },
+        {
+          text: this.$t('admin:theme.downloadDownload'),
+          align: 'center',
+          value: 'value',
+          sortable: false,
+          width: 100
+        }
+      ]
+    }
   },
   mounted() {
     this.darkModeInitial = this.darkMode
@@ -130,6 +191,7 @@ export default {
           mutation: themeSaveMutation,
           variables: {
             theme: this.config.theme,
+            iconset: this.config.iconset,
             darkMode: this.darkMode,
             injectCSS: this.config.injectCSS,
             injectHead: this.config.injectHead,

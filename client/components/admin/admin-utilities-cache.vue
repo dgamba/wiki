@@ -3,16 +3,23 @@
     v-toolbar(flat, color='primary', dark, dense)
       .subheading {{ $t('admin:utilities.cacheTitle') }}
     v-card-text
-      v-subheader.pl-0 Flush Pages and Assets Cache
+      v-subheader.pl-0.primary--text Flush Pages and Assets Cache
       .body-1 Pages and Assets are cached to disk for better performance. You can flush the cache to force all content to be fetched from the DB again.
       v-btn(outline, color='primary', @click='flushCache', :disabled='loading').ml-0.mt-3
         v-icon(left) build
         span Proceed
       v-divider.my-3
-      v-subheader.pl-0 Flush Temporary Uploads
+      v-subheader.pl-0.primary--text Flush Temporary Uploads
       .body-1 New uploads are temporarily saved to disk while they are being processed. They are automatically deleted after processing, but you can force an immediate cleanup using this tool.
       .body-1.red--text Note that performing this action while an upload is in progress can result in a failed upload.
       v-btn(outline, color='primary', @click='flushUploads', :disabled='loading').ml-0.mt-3
+        v-icon(left) build
+        span Proceed
+      v-divider.my-3
+      v-subheader.pl-0.primary--text Flush Client-Side Locale Cache
+      .body-1 Locale strings are cached in the browser local storage for 24h. You can delete your current cache in order to fetch the latest data during the next page load.
+      .body-1 Note that this affects only #[strong your own browser] and not everyone.
+      v-btn(outline, color='primary', @click='flushClientLocaleCache', :disabled='loading').ml-0.mt-3
         v-icon(left) build
         span Proceed
 </template>
@@ -78,6 +85,19 @@ export default {
 
       this.$store.commit(`loadingStop`, 'admin-utilities-cache-flushUploads')
       this.loading = false
+    },
+    async flushClientLocaleCache () {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const lsKey = window.localStorage.key(i)
+        if (_.startsWith(lsKey, 'i18next_res')) {
+          window.localStorage.removeItem(lsKey)
+        }
+      }
+      this.$store.commit('showNotification', {
+        message: 'Locale Client-Side Cache flushed successfully.',
+        style: 'success',
+        icon: 'check'
+      })
     }
   }
 }

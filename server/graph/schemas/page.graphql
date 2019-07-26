@@ -73,6 +73,11 @@ type PageMutation {
   ): DefaultResponse @auth(requires: ["delete:pages", "manage:system"])
 
   flushCache: DefaultResponse @auth(requires: ["manage:system"])
+
+  migrateToLocale(
+    sourceLocale: String!
+    targetLocale: String!
+  ): PageMigrationResponse @auth(requires: ["manage:system"])
 }
 
 # -----------------------------------------------
@@ -82,6 +87,11 @@ type PageMutation {
 type PageResponse {
   responseResult: ResponseStatus!
   page: Page
+}
+
+type PageMigrationResponse {
+  responseResult: ResponseStatus!
+  count: Int
 }
 
 type Page {

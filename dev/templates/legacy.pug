@@ -27,10 +27,6 @@ html
       link(rel='icon', type='image/png', sizes=favsize + 'x' + favsize, href='/favicons/favicon-' + favsize + 'x' + favsize + '.png')
     link(rel='manifest', href='/manifest.json')
 
-    //- Site Properties
-    script.
-      var siteConfig = !{JSON.stringify(siteConfig)}; var siteLangs = !{JSON.stringify(langs)}
-
     //- Icon Set
     if config.theming.iconset === 'mdi'
       link(
@@ -69,6 +65,11 @@ html
     )
       <% } %>
     <% } %>
+
+    script(
+      crossorigin='anonymous'
+      src='https://polyfill.io/v3/polyfill.min.js?features=EventSource'
+    )
 
     //- JS
     <% for (var index in htmlWebpackPlugin.files.js) { %>

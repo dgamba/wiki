@@ -58,6 +58,13 @@ router.get(['/e', '/e/*'], async (req, res, next) => {
     userId: req.user.id,
     isPrivate: false
   })
+
+  const injectCode = {
+    css: WIKI.config.theming.injectCSS,
+    head: WIKI.config.theming.injectHead,
+    body: WIKI.config.theming.injectBody
+  }
+
   if (page) {
     if (!WIKI.auth.checkAccess(req.user, ['manage:pages'], pageArgs)) {
       _.set(res.locals, 'pageMeta.title', 'Unauthorized')
@@ -84,7 +91,7 @@ router.get(['/e', '/e/*'], async (req, res, next) => {
       content: null
     }
   }
-  res.render('editor', { page })
+  res.render('editor', { page, injectCode })
 })
 
 /**
@@ -171,6 +178,8 @@ router.get('/*', async (req, res, next) => {
       return res.redirect(`/${pageArgs.locale}/${pageArgs.path}`)
     }
 
+    req.i18n.changeLanguage(pageArgs.locale)
+
     if (!WIKI.auth.checkAccess(req.user, ['read:pages'], pageArgs)) {
       _.set(res.locals, 'pageMeta.title', 'Unauthorized')
       return res.status(403).render('unauthorized', { action: 'view' })
@@ -195,10 +204,18 @@ router.get('/*', async (req, res, next) => {
           head: WIKI.config.theming.injectHead,
           body: WIKI.config.theming.injectBody
         }
-        res.render('page', { page, sidebar, injectCode })
+
+        if (req.query.legacy || req.get('user-agent').indexOf('Trident') >= 0) {
+          if (_.isString(page.toc)) {
+            page.toc = JSON.parse(page.toc)
+          }
+          res.render('legacy/page', { page, sidebar, injectCode, isAuthenticated: req.user && req.user.id !== 2 })
+        } else {
+          res.render('page', { page, sidebar, injectCode })
+        }
       } else if (pageArgs.path === 'home') {
         _.set(res.locals, 'pageMeta.title', 'Welcome')
-        res.render('welcome')
+        res.render('welcome', { locale: pageArgs.locale })
       } else {
         _.set(res.locals, 'pageMeta.title', 'Page Not Found')
         if (WIKI.auth.checkAccess(req.user, ['write:pages'], pageArgs)) {

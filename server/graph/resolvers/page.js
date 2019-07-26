@@ -95,6 +95,17 @@ module.exports = {
       } catch (err) {
         return graphHelper.generateError(err)
       }
+    },
+    async migrateToLocale(obj, args, context) {
+      try {
+        const count = await WIKI.models.pages.migrateToLocale(args)
+        return {
+          responseResult: graphHelper.generateSuccess('Migrated content to target locale successfully.'),
+          count
+        }
+      } catch (err) {
+        return graphHelper.generateError(err)
+      }
     }
   },
   Page: {
